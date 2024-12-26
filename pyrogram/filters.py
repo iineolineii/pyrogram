@@ -44,14 +44,7 @@ class InvertFilter(Filter):
         self.base = base
 
     async def __call__(self, client: "pyrogram.Client", update: Update):
-        if inspect.iscoroutinefunction(self.base.__call__):
-            x = await self.base(client, update)
-        else:
-            x = await client.loop.run_in_executor(
-                client.executor,
-                self.base,
-                client, update
-            )
+        x = await client.acall(self.base.__call__, client, update)
 
         return not x
 
@@ -62,27 +55,13 @@ class AndFilter(Filter):
         self.other = other
 
     async def __call__(self, client: "pyrogram.Client", update: Update):
-        if inspect.iscoroutinefunction(self.base.__call__):
-            x = await self.base(client, update)
-        else:
-            x = await client.loop.run_in_executor(
-                client.executor,
-                self.base,
-                client, update
-            )
+        x = await client.acall(self.base.__call__, client, update)
 
         # short circuit
         if not x:
             return False
 
-        if inspect.iscoroutinefunction(self.other.__call__):
-            y = await self.other(client, update)
-        else:
-            y = await client.loop.run_in_executor(
-                client.executor,
-                self.other,
-                client, update
-            )
+        y = await client.acall(self.other.__call__, client, update)
 
         return x and y
 
@@ -93,27 +72,13 @@ class OrFilter(Filter):
         self.other = other
 
     async def __call__(self, client: "pyrogram.Client", update: Update):
-        if inspect.iscoroutinefunction(self.base.__call__):
-            x = await self.base(client, update)
-        else:
-            x = await client.loop.run_in_executor(
-                client.executor,
-                self.base,
-                client, update
-            )
+        x = await client.acall(self.base.__call__, client, update)
 
         # short circuit
         if x:
             return True
 
-        if inspect.iscoroutinefunction(self.other.__call__):
-            y = await self.other(client, update)
-        else:
-            y = await client.loop.run_in_executor(
-                client.executor,
-                self.other,
-                client, update
-            )
+        y = await client.acall(self.other.__call__, client, update)
 
         return x or y
 

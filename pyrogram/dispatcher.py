@@ -315,15 +315,9 @@ class Dispatcher:
                                 continue
 
                             try:
-                                if inspect.iscoroutinefunction(handler.callback):
-                                    await handler.callback(self.client, *args)
-                                else:
-                                    await self.loop.run_in_executor(
-                                        self.client.executor,
-                                        handler.callback,
-                                        self.client,
-                                        *args
-                                    )
+                                await self.client.acall(
+                                    handler.callback, self.client, *args
+                                )
                             except pyrogram.StopPropagation:
                                 raise
                             except pyrogram.ContinuePropagation:

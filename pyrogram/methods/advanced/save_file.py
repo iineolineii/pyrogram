@@ -198,10 +198,7 @@ class SaveFile:
                             *progress_args
                         )
 
-                        if inspect.iscoroutinefunction(progress):
-                            await func()
-                        else:
-                            await self.loop.run_in_executor(self.executor, func)
+                        await self.acall(func)
             except StopTransmission:
                 raise
             except Exception as e:
