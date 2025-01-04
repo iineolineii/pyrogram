@@ -83,31 +83,59 @@ def async_to_sync(obj, name):
                 else:
                     return async_to_sync_gen(coroutine, main_loop, False)
 
+    async_to_sync_wrap._orig = function
+
     setattr(obj, name, async_to_sync_wrap)
 
 
-def wrap(source):
-    for name in dir(source):
-        method = getattr(source, name)
+def wrap_entity(entity):
+    for name in dir(entity):
+        method = getattr(entity, name)
 
         if not name.startswith("_"):
             if inspect.iscoroutinefunction(method) or inspect.isasyncgenfunction(method):
-                async_to_sync(source, name)
+                async_to_sync(entity, name)
+
+def unwrap_entity(entity):
+    for name in dir(entity):
+        method = getattr(entity, name)
+
+        if not name.startswith("_"):
+            if hasattr(method, "_orig"):
+                setattr(entity, name, method._orig)
 
 
-# Wrap all Client's relevant methods
-wrap(Methods)
+def wrap():
+    # Wrap all Client's relevant methods
+    wrap_entity(Methods)
 
-# Wrap types' bound methods
-for class_name in dir(types):
-    cls = getattr(types, class_name)
+    # Wrap types' bound methods
+    for class_name in dir(types):
+        cls = getattr(types, class_name)
 
-    if inspect.isclass(cls):
-        wrap(cls)
+        if inspect.isclass(cls):
+            wrap_entity(cls)
 
-# Special case for idle and compose, because they are not inside Methods
-async_to_sync(idle_module, "idle")
+    # Special case for idle and compose, because they are not inside Methods
+    async_to_sync(idle_module, "idle")
+
+    async_to_sync(compose_module, "compose")
+
+
+def unwrap():
+    unwrap_entity(Methods)
+
+    for class_name in dir(types):
+        cls = getattr(types, class_name)
+
+        if inspect.isclass(cls):
+            unwrap_entity(cls)
+
+    idle_module.idle = idle_module.idle._orig
+    compose_module.compose = compose_module.compose._orig
+
+
+wrap()
+
 idle = getattr(idle_module, "idle")
-
-async_to_sync(compose_module, "compose")
 compose = getattr(compose_module, "compose")
