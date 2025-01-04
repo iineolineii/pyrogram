@@ -152,7 +152,9 @@ class SaveFile:
                 )
                 await session.start()
 
-            workers = [self.loop.create_task(worker(session)) for _ in range(workers_count)]
+            workers = [
+                asyncio.create_task(worker(session)) for _ in range(workers_count)
+            ]
             queue = asyncio.Queue(1)
 
             try:

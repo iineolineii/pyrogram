@@ -53,7 +53,6 @@ class TCP:
         self.writer: Optional[asyncio.StreamWriter] = None
 
         self.lock = asyncio.Lock()
-        self.loop = asyncio.get_event_loop()
 
     async def _connect_via_proxy(
         self,
@@ -92,7 +91,9 @@ class TCP:
         sock.settimeout(TCP.TIMEOUT)
 
         with ThreadPoolExecutor() as executor:
-            await self.loop.run_in_executor(executor, sock.connect, destination)
+            await asyncio.get_running_loop().run_in_executor(
+                executor, sock.connect, destination
+            )
 
         sock.setblocking(False)
 

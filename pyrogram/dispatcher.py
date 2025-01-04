@@ -66,7 +66,6 @@ class Dispatcher:
 
     def __init__(self, client: "pyrogram.Client"):
         self.client = client
-        self.loop = asyncio.get_event_loop()
 
         self.handler_worker_tasks = []
         self.locks_list = []
@@ -212,13 +211,18 @@ class Dispatcher:
 
         self.update_parsers = {key: value for key_tuple, value in self.update_parsers.items() for key in key_tuple}
 
+        self._started = False
+
     async def start(self):
+        if self._started:
+            raise ValueError("Dispatcher is already started")
+        self._started = True
         if not self.client.no_updates:
             for i in range(self.client.workers):
                 self.locks_list.append(asyncio.Lock())
 
                 self.handler_worker_tasks.append(
-                    self.loop.create_task(self.handler_worker(self.locks_list[-1]))
+                    asyncio.create_task(self.handler_worker(self.locks_list[-1]))
                 )
 
             log.info("Started %s HandlerTasks", self.client.workers)
@@ -227,6 +231,9 @@ class Dispatcher:
                 await self.client.recover_gaps()
 
     async def stop(self, clear: bool = True):
+        if not self._started:
+            raise ValueError("Dispatcher is not started")
+        self._started = False
         if not self.client.no_updates:
             for i in range(self.client.workers):
                 self.updates_queue.put_nowait(None)
@@ -241,37 +248,51 @@ class Dispatcher:
             log.info("Stopped %s HandlerTasks", self.client.workers)
 
     def add_handler(self, handler, group: int):
-        async def fn():
+        def add_handler_sync():
+            if group not in self.groups:
+                self.groups[group] = []
+                self.groups = OrderedDict(sorted(self.groups.items()))
+
+            self.groups[group].append(handler)
+
+        async def add_handler_async():
             for lock in self.locks_list:
                 await lock.acquire()
 
             try:
-                if group not in self.groups:
-                    self.groups[group] = []
-                    self.groups = OrderedDict(sorted(self.groups.items()))
-
-                self.groups[group].append(handler)
+                add_handler_sync()
             finally:
                 for lock in self.locks_list:
                     lock.release()
 
-        self.loop.create_task(fn())
+        if self._started:
+            asyncio.create_task(add_handler_async())
+        else:
+            add_handler_sync()
 
     def remove_handler(self, handler, group: int):
-        async def fn():
+        def remove_handler_sync():
+            if group not in self.groups:
+                raise ValueError(
+                    f"Group {group} does not exist. Handler was not removed."
+                )
+
+            self.groups[group].remove(handler)
+
+        async def remove_handler_async():
             for lock in self.locks_list:
                 await lock.acquire()
 
             try:
-                if group not in self.groups:
-                    raise ValueError(f"Group {group} does not exist. Handler was not removed.")
-
-                self.groups[group].remove(handler)
+                remove_handler_sync()
             finally:
                 for lock in self.locks_list:
                     lock.release()
 
-        self.loop.create_task(fn())
+        if self._started:
+            asyncio.create_task(remove_handler_async())
+        else:
+            remove_handler_sync()
 
     async def handler_worker(self, lock):
         while True:
