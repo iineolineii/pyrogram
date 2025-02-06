@@ -16,12 +16,13 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
-import pyrogram
-
 from datetime import datetime
-from pyrogram import enums, raw, types, utils
-from pyrogram.errors import PeerIdInvalid
 from typing import BinaryIO, Callable, List, Optional, Union
+
+import pyrogram
+from pyrogram import enums, raw, types, utils
+from pyrogram.errors import ChannelInvalid, ChannelPrivate, PeerIdInvalid
+
 from ..object import Object
 from ..update import Update
 
@@ -74,6 +75,9 @@ class Story(Object, Update):
         video (:obj:`~pyrogram.types.Video`, *optional*):
             Story is a video, information about the video.
 
+        alternative_videos (List of :obj:`~pyrogram.types.Video`, *optional*):
+            Alternative qualities of the video, if the story is a video.
+
         edited (``bool``, *optional*):
            True, if the Story has been edited.
 
@@ -104,6 +108,11 @@ class Story(Object, Update):
         forwards (``int``, *optional*):
             Stories forwards.
 
+        outgoing (``bool``, *optional*):
+            Whether the story is incoming or outgoing.
+            Story received from others are incoming (*outgoing* is False).
+            Story sent from yourself are outgoing (*outgoing* is True).
+
         privacy (:obj:`~pyrogram.enums.StoriesPrivacyRules`, *optional*):
             Story privacy.
 
@@ -116,6 +125,9 @@ class Story(Object, Update):
         reactions (List of :obj:`~pyrogram.types.Reaction`):
             List of the reactions to this story.
 
+        reactions_count (``int``, *optional*):
+            Reactions count.
+
         skipped (``bool``, *optional*):
             The story is skipped.
             A story can be skipped in case it was skipped.
@@ -124,47 +136,52 @@ class Story(Object, Update):
             The story is deleted.
             A story can be deleted in case it was deleted or you tried to retrieve a story that doesn't exist yet.
 
-        raw (``pyrogram.raw.types.StoryItem``, *optional*):
+        media_areas (List of :obj:`~pyrogram.types.MediaArea`, *optional*):
+            List of media areas.
+
+        raw (:obj:`~pyrogram.raw.types.StoryItem`, *optional*):
             The raw story object, as received from the Telegram API.
     """
-
-    # TODO: Add Media Areas
 
     def __init__(
         self,
         *,
         client: "pyrogram.Client" = None,
         id: int,
-        from_user: "types.User" = None,
-        sender_chat: "types.Chat" = None,
-        date: datetime = None,
-        chat: "types.Chat" = None,
-        forward_from: "types.User" = None,
-        forward_sender_name: str = None,
-        forward_from_chat: "types.Chat" = None,
-        forward_from_story_id: int = None,
-        expire_date: datetime = None,
-        media: "enums.MessageMediaType" = None,
-        has_protected_content: bool = None,
-        photo: "types.Photo" = None,
-        video: "types.Video" = None,
-        edited: bool = None,
-        pinned: bool = None,
-        public: bool = None,
-        close_friends: bool = None,
-        contacts: bool = None,
-        selected_contacts: bool = None,
-        caption: str = None,
-        caption_entities: List["types.MessageEntity"] = None,
-        views: int = None,
-        forwards: int = None,
-        privacy: "enums.StoriesPrivacyRules" = None,
-        allowed_users: List[Union[int, str]] = None,
-        disallowed_users: List[Union[int, str]] = None,
-        reactions: List["types.Reaction"] = None,
-        skipped: bool = None,
-        deleted: bool = None,
-        raw: "raw.types.StoryItem" = None
+        from_user: Optional["types.User"] = None,
+        sender_chat: Optional["types.Chat"] = None,
+        date: Optional[datetime] = None,
+        chat: Optional["types.Chat"] = None,
+        forward_from: Optional["types.User"] = None,
+        forward_sender_name: Optional[str] = None,
+        forward_from_chat: Optional["types.Chat"] = None,
+        forward_from_story_id: Optional[int] = None,
+        expire_date: Optional[datetime] = None,
+        media: Optional["enums.MessageMediaType"] = None,
+        has_protected_content: Optional[bool] = None,
+        photo: Optional["types.Photo"] = None,
+        video: Optional["types.Video"] = None,
+        alternative_videos: Optional[List["types.Video"]] = None,
+        edited: Optional[bool] = None,
+        pinned: Optional[bool] = None,
+        public: Optional[bool] = None,
+        close_friends: Optional[bool] = None,
+        contacts: Optional[bool] = None,
+        selected_contacts: Optional[bool] = None,
+        caption: Optional[str] = None,
+        caption_entities: Optional[List["types.MessageEntity"]] = None,
+        views: Optional[int] = None,
+        forwards: Optional[int] = None,
+        outgoing: Optional[bool] = None,
+        privacy: Optional["enums.StoriesPrivacyRules"] = None,
+        allowed_users: Optional[List[Union[int, str]]] = None,
+        disallowed_users: Optional[List[Union[int, str]]] = None,
+        reactions: Optional[List["types.Reaction"]] = None,
+        reactions_count: Optional[int] = None,
+        skipped: Optional[bool] = None,
+        deleted: Optional[bool] = None,
+        media_areas: Optional[List["types.MediaArea"]] = None,
+        raw: Optional["raw.types.StoryItem"] = None
     ):
         super().__init__(client)
 
@@ -182,6 +199,7 @@ class Story(Object, Update):
         self.has_protected_content = has_protected_content
         self.photo = photo
         self.video = video
+        self.alternative_videos = alternative_videos
         self.edited = edited
         self.pinned = pinned
         self.public = public
@@ -192,62 +210,47 @@ class Story(Object, Update):
         self.caption_entities = caption_entities
         self.views = views
         self.forwards = forwards
+        self.outgoing = outgoing
         self.privacy = privacy
         self.allowed_users = allowed_users
         self.disallowed_users = disallowed_users
         self.reactions = reactions
+        self.reactions_count = reactions_count
         self.skipped = skipped
         self.deleted = deleted
+        self.media_areas = media_areas
         self.raw = raw
 
     @staticmethod
     async def _parse(
         client: "pyrogram.Client",
-        story: raw.types.StoryItem,
+        story: "raw.types.StoryItem",
         users: dict,
         chats: dict,
         peer: Union["raw.types.PeerChannel", "raw.types.PeerUser"]
     ) -> "Story":
         if isinstance(peer, raw.types.InputPeerSelf):
-            r = await client.invoke(raw.functions.users.GetUsers(id=[raw.types.InputPeerSelf()]))
-            peer_id = r[0].id
-            users.update({i.id: i for i in r})
-        elif isinstance(peer, raw.types.InputPeerUser):
-            peer_id = utils.get_raw_peer_id(peer)
-        elif isinstance(peer, raw.types.InputPeerChannel):
-            peer_id = utils.get_raw_peer_id(peer)
+            if client.me:
+                peer_id = client.me.id
+                users.update({peer_id: client.me.raw})
+            else:
+                r = await client.invoke(raw.functions.users.GetUsers(id=[raw.types.InputPeerSelf()]))
+                peer_id = r[0].id
+                users.update({r[0].id: r[0]})
+        elif hasattr(peer, "user_id"):
+            peer_id = peer.user_id
+
+            if peer_id not in users:
+                r = await client.invoke(raw.functions.users.GetUsers(id=[raw.types.InputPeerSelf(), peer]))
+                users.update({i.id: i for i in r})
+        elif hasattr(peer, "channel_id"):
+            peer_id = peer.channel_id
+
             if peer_id not in chats:
                 r = await client.invoke(raw.functions.channels.GetChannels(id=[peer]))
                 chats.update({peer_id: r.chats[0]})
         else:
-            peer_id = utils.get_raw_peer_id(peer)
-
-        if isinstance(peer, (raw.types.PeerUser, raw.types.InputPeerUser)) and peer_id not in users:
-            try:
-                r = await client.invoke(
-                    raw.functions.users.GetUsers(
-                        id=[
-                            await client.resolve_peer(peer_id)
-                        ]
-                    )
-                )
-            except PeerIdInvalid:
-                pass
-            else:
-                users.update({i.id: i for i in r})
-
-        photo = None
-        video = None
-        from_user = None
-        sender_chat = None
-        chat = None
-        privacy = None
-        allowed_users = None
-        disallowed_users = None
-        media_type = None
-        views = None
-        forwards = None
-        reactions = None
+            raise ValueError(f"Invalid peer type: {type(peer)}")
 
         from_user = types.User._parse(client, users.get(peer_id, None))
         sender_chat = types.Chat._parse_channel_chat(client, chats[peer_id]) if not from_user else None
@@ -256,9 +259,75 @@ class Story(Object, Update):
         if isinstance(story, raw.types.StoryItemDeleted):
             return Story(client=client, id=story.id, deleted=True, from_user=from_user, sender_chat=sender_chat, chat=chat)
         if isinstance(story, raw.types.StoryItemSkipped):
-            return Story(client=client, id=story.id, skipped=True, from_user=from_user, sender_chat=sender_chat, chat=chat)
+            try:
+                r = await client.invoke(
+                    raw.functions.stories.GetStoriesByID(
+                        peer=await client.resolve_peer(chat.id),
+                        id=[story.id]
+                    )
+                )
+
+                users.update({i.id: i for i in r.users})
+                chats.update({i.id: i for i in r.chats})
+
+                if r.stories:
+                    story = r.stories[0]
+            except (ChannelPrivate, ChannelInvalid):
+                return Story(client=client, id=story.id, skipped=True, from_user=from_user, sender_chat=sender_chat, chat=chat)
         if isinstance(story, raw.types.MessageMediaStory):
-            return Story(client=client, id=story.id, from_user=from_user, sender_chat=sender_chat, chat=chat)
+            if client.me and client.me.is_bot:
+                return Story(client=client, id=story.id, from_user=from_user, sender_chat=sender_chat, chat=chat)
+
+            if not getattr(story, "story", None):
+                try:
+                    r = await client.invoke(
+                        raw.functions.stories.GetStoriesByID(
+                            peer=await client.resolve_peer(chat.id),
+                            id=[story.id]
+                        )
+                    )
+
+                    users.update({i.id: i for i in r.users})
+                    chats.update({i.id: i for i in r.chats})
+
+                    if r.stories:
+                        story = r.stories[0]
+                except (ChannelPrivate, ChannelInvalid):
+                    pass
+            else:
+                story = story.story
+
+        if getattr(story, "min", None):
+            try:
+                r = await client.invoke(
+                    raw.functions.stories.GetStoriesByID(
+                        peer=await client.resolve_peer(chat.id),
+                        id=[story.id]
+                    )
+                )
+
+                users.update({i.id: i for i in r.users})
+                chats.update({i.id: i for i in r.chats})
+
+                if r.stories:
+                    story = r.stories[0]
+            except (ChannelPrivate, ChannelInvalid):
+                pass
+
+        if not getattr(story, "media", None):
+            return Story(client=client, id=story.id, deleted=True, from_user=from_user, sender_chat=sender_chat, chat=chat)
+
+        photo = None
+        video = None
+        privacy = None
+        allowed_users = None
+        disallowed_users = None
+        media_type = None
+        views = None
+        forwards = None
+        reactions = None
+        reactions_count = None
+        alternative_videos = []
 
         forward_from = None
         forward_sender_name = None
@@ -284,6 +353,7 @@ class Story(Object, Update):
                 types.Reaction._parse_count(client, reaction)
                 for reaction in getattr(story.views, "reactions", [])
             ] or None
+            reactions_count = getattr(story.views, "reactions_count", None)
 
         if isinstance(story.media, raw.types.MessageMediaPhoto):
             photo = types.Photo._parse(client, story.media.photo, story.media.ttl_seconds)
@@ -292,8 +362,18 @@ class Story(Object, Update):
             doc = story.media.document
             attributes = {type(i): i for i in doc.attributes}
             video_attributes = attributes.get(raw.types.DocumentAttributeVideo, None)
-            video = types.Video._parse(client, doc, video_attributes, None)
+            video = types.Video._parse(client, doc, video_attributes)
             media_type = enums.MessageMediaType.VIDEO
+
+            for altdoc in getattr(story.media, "alt_documents", []):
+                if isinstance(altdoc, raw.types.Document):
+                    altdoc_attributes = {type(i): i for i in altdoc.attributes}
+                    altdoc_video_attribute = altdoc_attributes.get(raw.types.DocumentAttributeVideo)
+
+                    if altdoc_video_attribute:
+                        alternative_videos.append(
+                            types.Video._parse(client, altdoc, altdoc_video_attribute)
+                        )
 
         privacy_map = {
             raw.types.PrivacyValueAllowAll: enums.StoriesPrivacyRules.PUBLIC,
@@ -331,6 +411,7 @@ class Story(Object, Update):
             has_protected_content=story.noforwards,
             photo=photo,
             video=video,
+            alternative_videos=types.List(alternative_videos) or None,
             edited=story.edited,
             pinned=story.pinned,
             public=story.public,
@@ -341,10 +422,18 @@ class Story(Object, Update):
             caption_entities=entities or None,
             views=views,
             forwards=forwards,
+            outgoing=getattr(story, "out", None),
             privacy=privacy,
             allowed_users=allowed_users,
             disallowed_users=disallowed_users,
             reactions=reactions,
+            reactions_count=reactions_count,
+            media_areas=types.List(
+                [
+                    await types.MediaArea._parse(client, area, chats)
+                    for area in getattr(story, "media_areas", [])
+                ]
+            ) or None,
             raw=story,
             client=client
         )

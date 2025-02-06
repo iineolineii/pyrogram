@@ -20,8 +20,8 @@ import pyrogram
 from pyrogram import raw
 
 
-class HideStarGift:
-    async def hide_star_gift(
+class HideGift:
+    async def hide_gift(
         self: "pyrogram.Client",
         message_id: int
     ) -> bool:
@@ -40,11 +40,13 @@ class HideStarGift:
             .. code-block:: python
 
                 # Hide gift
-                app.hide_star_gift(message_id=123)
+                app.hide_gift(message_id=123)
         """
         r = await self.invoke(
             raw.functions.payments.SaveStarGift(
-                msg_id=message_id,
+                stargift=raw.types.InputSavedStarGiftUser(
+                    msg_id=message_id
+                ),
                 unsave=True
             )
         )

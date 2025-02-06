@@ -42,6 +42,7 @@ from .giveaway_completed import GiveawayCompleted
 from .giveaway_created import GiveawayCreated
 from .giveaway_winners import GiveawayWinners
 from .location import Location
+from .media_area import MediaArea
 from .message import Message
 from .message_entity import MessageEntity
 from .message_reactions import MessageReactions
@@ -55,8 +56,8 @@ from .poll_option import PollOption
 from .reaction import Reaction
 from .refunded_payment import RefundedPayment
 from .screenshot_taken import ScreenshotTaken
-from .star_gift_attribute import StarGiftAttribute
-from .star_gift import StarGift
+from .gift_attribute import GiftAttribute
+from .gift import Gift
 from .sticker import Sticker
 from .story import Story
 from .stripped_thumbnail import StrippedThumbnail
@@ -97,6 +98,7 @@ __all__ = [
     "GiveawayCreated",
     "GiveawayWinners",
     "Location",
+    "MediaArea",
     "Message",
     "MessageEntity",
     "MessageReactions",
@@ -110,8 +112,8 @@ __all__ = [
     "Reaction",
     "RefundedPayment",
     "ScreenshotTaken",
-    "StarGiftAttribute",
-    "StarGift",
+    "GiftAttribute",
+    "Gift",
     "Sticker",
     "Story",
     "StrippedThumbnail",

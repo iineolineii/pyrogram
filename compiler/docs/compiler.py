@@ -326,17 +326,19 @@ def pyrogram_api():
         Payments
             apply_gift_code
             check_gift_code
-            convert_star_gift
+            convert_gift
             get_payment_form
-            get_star_gifts
-            get_user_star_gifts_count
-            get_user_star_gifts
-            hide_star_gift
+            get_available_gifts
+            get_upgraded_gift
+            get_chat_gifts_count
+            get_chat_gifts
+            hide_gift
             send_payment_form
-            send_star_gift
-            show_star_gift
-            transfer_star_gift
-            upgrade_star_gift
+            send_gift
+            show_gift
+            transfer_gift
+            upgrade_gift
+            get_stars_balance
         """,
         phone="""
         Phone
@@ -516,6 +518,7 @@ def pyrogram_api():
             FoundContacts
             PrivacyRule
             StoriesStealthMode
+            BotVerification
         """,
         messages_media="""
         Messages & Media
@@ -524,6 +527,7 @@ def pyrogram_api():
             MessageEntity
             Photo
             Thumbnail
+            StrippedThumbnail
             Audio
             AvailableEffect
             Document
@@ -538,6 +542,7 @@ def pyrogram_api():
             VideoNote
             Contact
             Location
+            MediaArea
             Venue
             Sticker
             Game
@@ -547,7 +552,7 @@ def pyrogram_api():
             Dice
             Reaction
             RefundedPayment
-            StarGift
+            Gift
             VideoChatScheduled
             VideoChatStarted
             VideoChatEnded
@@ -575,7 +580,7 @@ def pyrogram_api():
             ContactRegistered
             ScreenshotTaken
             WriteAccessAllowed
-            StarGiftAttribute
+            GiftAttribute
         """,
         bot_keyboards="""
         Bot keyboards
@@ -716,6 +721,7 @@ def pyrogram_api():
             Message.download
             Message.forward
             Message.copy
+            Message.copy_media_group
             Message.pin
             Message.unpin
             Message.edit
@@ -845,10 +851,14 @@ def pyrogram_api():
         ActiveSession
             ActiveSession.reset
         """,
-        star_gift="""
-        StarGift
-            StarGift.show
-            StarGift.hide
+        gift="""
+        Gift
+            Gift.show
+            Gift.hide
+            Gift.convert
+            Gift.upgrade
+            Gift.transfer
+            Gift.wear
         """,
         animation="""
         Animation
@@ -914,7 +924,8 @@ def pyrogram_api():
             SentCodeType
             StoriesPrivacyRules
             UserStatus
-            StarGiftAttributeType
+            GiftAttributeType
+            MediaAreaType
         """,
     )
 

@@ -16,49 +16,47 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
-from typing import Union
+from typing import Optional, Union
 
 import pyrogram
 from pyrogram import raw
 
-log = logging.getLogger(__name__)
 
-
-class GetUserStarGiftsCount:
-    async def get_user_star_gifts_count(
+class GetStarsBalance:
+    async def get_stars_balance(
         self: "pyrogram.Client",
-        chat_id: Union[int, str]
+        chat_id: Optional[Union[int, str]] = None,
     ) -> int:
-        """Get the total count of star gifts of specified user.
+        """Get the current Telegram Stars balance of the current account.
 
         .. include:: /_includes/usable-by/users.rst
 
         Parameters:
-            chat_id (``int`` | ``str``):
+            chat_id (``int`` | ``str``, *optional*):
                 Unique identifier (int) or username (str) of the target chat.
                 For your personal cloud (Saved Messages) you can simply use "me" or "self".
-                For a contact that exists in your Telegram address book you can use his phone number (str).
 
         Returns:
-            ``int``: On success, the star gifts count is returned.
+            ``int``: On success, the current stars balance is returned.
 
         Example:
             .. code-block:: python
 
-                await app.get_user_star_gifts_count(chat_id)
-        """
-        peer = await self.resolve_peer(chat_id)
+                # Get stars balance
+                app.get_stars_balance()
 
-        if not isinstance(peer, (raw.types.InputPeerUser, raw.types.InputPeerSelf)):
-            raise ValueError("chat_id must belong to a user.")
+                # Get stars balance of a bot
+                app.get_stars_balance(chat_id="pyrogrambot")
+        """
+        if chat_id is None:
+            peer = raw.types.InputPeerSelf()
+        else:
+            peer = await self.resolve_peer(chat_id)
 
         r = await self.invoke(
-            raw.functions.payments.GetUserStarGifts(
-                user_id=peer,
-                offset="",
-                limit=1
+            raw.functions.payments.GetStarsStatus(
+                peer=peer
             )
         )
 
-        return r.count
+        return r.balance.amount

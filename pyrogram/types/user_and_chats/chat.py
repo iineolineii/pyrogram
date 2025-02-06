@@ -94,6 +94,9 @@ class Chat(Object):
         is_paid_reactions_available (``bool``, *optional*):
             True, if paid reactions enabled in this chat.
 
+        is_gifts_available (``bool``, *optional*):
+            True, if star gifts can be received by this chat.
+
         title (``str``, *optional*):
             Title, for supergroups, channels and basic group chats.
 
@@ -245,6 +248,12 @@ class Chat(Object):
         reactions_limit (``int``, *optional*):
             This flag may be used to impose a custom limit of unique reactions (i.e. a customizable version of appConfig.reactions_uniq_max).
 
+        gifts_count (``int``, *optional*):
+            Number of gifts received by the user.
+
+        bot_verification (:obj:`~pyrogram.types.BotVerification`, *optional*):
+            Information about bot verification.
+
         raw (:obj:`~pyrogram.raw.base.Chat` | :obj:`~pyrogram.raw.base.User` | :obj:`~pyrogram.raw.base.ChatFull` | :obj:`~pyrogram.raw.base.UserFull`, *optional*):
             The raw chat or user object, as received from the Telegram API.
 
@@ -277,6 +286,7 @@ class Chat(Object):
         is_call_not_empty: bool = None,
         is_public: bool = None,
         is_paid_reactions_available: bool = None,
+        is_gifts_available: bool = None,
         title: str = None,
         username: str = None,
         usernames: List["types.Username"] = None,
@@ -322,6 +332,8 @@ class Chat(Object):
         banned_until_date: datetime = None,
         subscription_until_date: datetime = None,
         reactions_limit: int = None,
+        gifts_count: int = None,
+        bot_verification: "types.BotVerification" = None,
         raw: Union["raw.base.Chat", "raw.base.User", "raw.base.ChatFull", "raw.base.UserFull"] = None
     ):
         super().__init__(client)
@@ -347,6 +359,7 @@ class Chat(Object):
         self.is_call_not_empty = is_call_not_empty
         self.is_public = is_public
         self.is_paid_reactions_available = is_paid_reactions_available
+        self.is_gifts_available = is_gifts_available
         self.title = title
         self.username = username
         self.usernames = usernames
@@ -392,10 +405,15 @@ class Chat(Object):
         self.banned_until_date = banned_until_date
         self.subscription_until_date = subscription_until_date
         self.reactions_limit = reactions_limit
+        self.gifts_count = gifts_count
+        self.bot_verification = bot_verification
         self.raw = raw
 
     @staticmethod
-    def _parse_user_chat(client, user: raw.types.User) -> "Chat":
+    def _parse_user_chat(client, user: raw.types.User) -> Optional["Chat"]:
+        if user is None or isinstance(user, raw.types.UserEmpty):
+            return None
+
         peer_id = user.id
 
         return Chat(
@@ -423,7 +441,10 @@ class Chat(Object):
         )
 
     @staticmethod
-    def _parse_chat_chat(client, chat: raw.types.Chat) -> "Chat":
+    def _parse_chat_chat(client, chat: raw.types.Chat) -> Optional["Chat"]:
+        if chat is None or isinstance(chat, raw.types.ChatEmpty):
+            return None
+
         peer_id = -chat.id
         usernames = getattr(chat, "usernames", [])
         admin_rights = getattr(chat, "admin_rights", None)
@@ -458,7 +479,10 @@ class Chat(Object):
         )
 
     @staticmethod
-    def _parse_channel_chat(client, channel: raw.types.Channel) -> "Chat":
+    def _parse_channel_chat(client, channel: raw.types.Channel) -> Optional["Chat"]:
+        if channel is None:
+            return None
+
         peer_id = utils.get_channel_id(channel.id)
         restriction_reason = getattr(channel, "restriction_reason", [])
         usernames = getattr(channel, "usernames", [])
@@ -550,6 +574,12 @@ class Chat(Object):
             parsed_chat.business_info = types.BusinessInfo._parse(client, full_user, users)
             parsed_chat.business_intro = await types.BusinessIntro._parse(client, getattr(full_user, "business_intro", None))
             parsed_chat.birthday = types.Birthday._parse(getattr(full_user, "birthday", None))
+            parsed_chat.gifts_count = getattr(full_user, "stargifts_count", None)
+            parsed_chat.bot_verification = types.BotVerification._parse(
+                client,
+                getattr(full_user, "bot_verification", None),
+                users
+            )
             parsed_chat.raw = full_user
 
             if full_user.pinned_msg_id:
@@ -605,6 +635,8 @@ class Chat(Object):
                 )
                 parsed_chat.can_send_paid_media = getattr(full_chat, "paid_media_allowed", None)
                 parsed_chat.is_paid_reactions_available = getattr(full_chat, "paid_reactions_available", None)
+                parsed_chat.is_gifts_available = getattr(full_chat, "stargifts_available", None)
+                parsed_chat.gifts_count = getattr(full_chat, "stargifts_count", None)
 
                 linked_chat_raw = chats.get(full_chat.linked_chat_id, None)
 
@@ -622,13 +654,12 @@ class Chat(Object):
                     parsed_chat.send_as_chat = Chat._parse_chat(client, send_as_raw)
 
                 if full_chat.stories:
-                    peer_stories: raw.types.PeerStories = full_chat.stories
                     parsed_chat.stories = types.List(
                         [
                             await types.Story._parse(
-                                client, story, users, chats, peer_stories.peer
+                                client, story, users, chats, full_chat.stories.peer
                             )
-                            for story in peer_stories.stories
+                            for story in full_chat.stories.stories
                         ]
                     ) or None
 
@@ -651,6 +682,11 @@ class Chat(Object):
             parsed_chat.unrestrict_boost_count = getattr(full_chat, "boosts_unrestrict", None)
             parsed_chat.join_requests_count = getattr(full_chat, "requests_pending", None)
             parsed_chat.reactions_limit = getattr(full_chat, "reactions_limit", None)
+            parsed_chat.bot_verification = types.BotVerification._parse(
+                client,
+                getattr(full_chat, "bot_verification", None),
+                users
+            )
 
             parsed_chat.raw = full_chat
 

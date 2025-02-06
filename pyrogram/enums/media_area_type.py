@@ -16,39 +16,31 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
-
-from typing import Union
-
-import pyrogram
 from pyrogram import raw
 
+from .auto_name import AutoName
 
-class ConvertStarGift:
-    async def convert_star_gift(
-        self: "pyrogram.Client",
-        message_id: int
-    ) -> bool:
-        """Convert star gift to stars.
 
-        .. include:: /_includes/usable-by/users.rst
+class MediaAreaType(AutoName):
+    """Media area type enumeration used in :obj:`~pyrogram.types.MediaArea`."""
 
-        Parameters:
-            message_id (``int``):
-                Unique message identifier of star gift.
+    POST = raw.types.MediaAreaChannelPost
+    "Channel post."
 
-        Returns:
-            ``bool``: On success, True is returned.
+    LOCATION = raw.types.MediaAreaGeoPoint
+    "Location."
 
-        Example:
-            .. code-block:: python
+    REACTION = raw.types.MediaAreaSuggestedReaction
+    "Reaction."
 
-                # Convert gift
-                app.convert_star_gift(message_id=123)
-        """
-        r = await self.invoke(
-            raw.functions.payments.ConvertStarGift(
-                msg_id=message_id
-            )
-        )
+    URL = raw.types.MediaAreaUrl
+    "URL."
 
-        return r
+    VENUE = raw.types.MediaAreaVenue
+    "Venue."
+
+    WEATHER = raw.types.MediaAreaWeather
+    "Weather."
+
+    GIFT = raw.types.MediaAreaStarGift
+    "Gift."

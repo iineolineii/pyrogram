@@ -16,19 +16,16 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Optional
-
 import pyrogram
 from pyrogram import raw
 
 
-class UpgradeStarGift:
-    async def upgrade_star_gift(
+class ShowGift:
+    async def show_gift(
         self: "pyrogram.Client",
-        message_id: int,
-        keep_details: Optional[bool] = None
+        message_id: int
     ) -> bool:
-        """Upgrade star gift to unique.
+        """Display the star gift in your profile.
 
         .. include:: /_includes/usable-by/users.rst
 
@@ -43,13 +40,15 @@ class UpgradeStarGift:
             .. code-block:: python
 
                 # Show gift
-                app.upgrade_star_gift(message_id=123)
+                app.show_gift(message_id=123)
         """
-        await self.invoke(
-            raw.functions.payments.UpgradeStarGift(
-                msg_id=message_id,
-                keep_original_details=keep_details
+        r = await self.invoke(
+            raw.functions.payments.SaveStarGift(
+                stargift=raw.types.InputSavedStarGiftUser(
+                    msg_id=message_id
+                ),
+                unsave=False
             )
         )
 
-        return True # TODO:
+        return r
