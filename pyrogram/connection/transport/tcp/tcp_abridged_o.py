@@ -16,13 +16,14 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
-import asyncio
 import logging
 import os
 from typing import Optional, Tuple
 
 import pyrogram
 from pyrogram.crypto import aes
+from pyrogram.utils import get_event_loop
+
 from .tcp import TCP, Proxy
 
 log = logging.getLogger(__name__)
@@ -59,7 +60,7 @@ class TCPAbridgedO(TCP):
     async def send(self, data: bytes, *args) -> None:
         length = len(data) // 4
         data = (bytes([length]) if length <= 126 else b"\x7f" + length.to_bytes(3, "little")) + data
-        payload = await asyncio.get_running_loop().run_in_executor(
+        payload = await get_event_loop().run_in_executor(
             pyrogram.crypto_executor, aes.ctr256_encrypt, data, *self.encrypt
         )
 
@@ -86,6 +87,6 @@ class TCPAbridgedO(TCP):
         if data is None:
             return None
 
-        return await asyncio.get_running_loop().run_in_executor(
+        return await get_event_loop().run_in_executor(
             pyrogram.crypto_executor, aes.ctr256_decrypt, data, *self.decrypt
         )

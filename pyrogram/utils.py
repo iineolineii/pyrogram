@@ -40,7 +40,7 @@ async def ainput(prompt: str = "", *, hide: bool = False):
     """Just like the built-in input, but async"""
     with ThreadPoolExecutor(1) as executor:
         func = functools.partial(getpass if hide else input, prompt)
-        return await asyncio.get_running_loop().run_in_executor(executor, func)
+        return await get_event_loop().run_in_executor(executor, func)
 
 
 def get_input_media_from_file_id(
@@ -574,3 +574,24 @@ def from_inline_bytes(data: bytes, file_name: str = None) -> BytesIO:
     b.name = file_name or f"photo_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
 
     return b
+
+def get_event_loop() -> asyncio.AbstractEventLoop:
+    """Return an asyncio event loop.
+
+    When called from a coroutine or a callback (e.g., scheduled with call_soon
+    or similar API), this function always returns the running event loop.
+
+    If no running event loop is set, it creates a new one using
+    `get_event_loop_policy().new_event_loop()` and sets it as the current loop.
+
+    This function replaces the now-deprecated `asyncio.get_event_loop()`
+    (deprecated in Python 3.12).
+
+    See: https://github.com/python/cpython/issues/100160
+    """
+    try:
+        return asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        return loop

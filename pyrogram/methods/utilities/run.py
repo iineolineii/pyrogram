@@ -18,11 +18,11 @@
 
 from typing import List
 
-import asyncio
 import inspect
 
 import pyrogram
 from pyrogram.methods.utilities.idle import idle
+from pyrogram.utils import get_event_loop
 
 
 class Run:
@@ -74,7 +74,7 @@ class Run:
 
                 app.run(main())
         """
-        loop = asyncio.get_event_loop()
+        loop = get_event_loop()
         run = loop.run_until_complete
 
         if inspect.iscoroutinefunction(self.start):

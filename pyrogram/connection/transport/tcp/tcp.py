@@ -21,6 +21,7 @@ import ipaddress
 import logging
 import socket
 from concurrent.futures import ThreadPoolExecutor
+from pyrogram import utils
 from typing import Tuple, Dict, TypedDict, Optional
 
 import socks
@@ -91,7 +92,7 @@ class TCP:
         sock.settimeout(TCP.TIMEOUT)
 
         with ThreadPoolExecutor() as executor:
-            await asyncio.get_running_loop().run_in_executor(
+            await get_event_loop().run_in_executor(
                 executor, sock.connect, destination
             )
 

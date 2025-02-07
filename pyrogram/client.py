@@ -53,7 +53,7 @@ from pyrogram.methods import Methods
 from pyrogram.session import Auth, Session
 from pyrogram.storage import Storage, FileStorage, MemoryStorage
 from pyrogram.types import User, TermsOfService
-from pyrogram.utils import ainput
+from pyrogram.utils import ainput, get_event_loop
 from pyrogram.qrlogin import QRLogin
 from .connection import Connection
 from .connection.transport import TCP, TCPAbridged
@@ -1235,7 +1235,7 @@ class Client(Methods):
     def guess_mime_type(self, filename: Union[str, BytesIO]) -> Optional[str]:
         if isinstance(filename, BytesIO):
             return self.mimetypes.guess_type(filename.name)[0]
-            
+
         return self.mimetypes.guess_type(filename)[0]
 
     def guess_extension(self, mime_type: str) -> Optional[str]:
@@ -1246,7 +1246,7 @@ class Client(Methods):
         if inspect.iscoroutinefunction(func):
             return await func(*args, **kwargs)
         else:
-            return await asyncio.get_running_loop().run_in_executor(
+            return await get_event_loop().run_in_executor(
                 self.executor, func, *args, **kwargs
             )
 
